@@ -7,6 +7,7 @@ from cqe.columns.array import floating_column, integer_column, string_column
 from cqe.errors import ConfigError
 from cqe.exec.batch import Batch
 from cqe.exec.expr import Compare, column, literal
+from cqe.exec.filter import apply as apply_predicate
 from cqe.storage import bloom, layout
 from cqe.storage.bloom import Bloom, build, build_for, optimal_hashes, predicted_rate, prune
 from cqe.storage.layout import (
@@ -425,8 +426,6 @@ def test_pruning_reports_the_rows_it_kept(batch):
 
 
 def test_pruning_never_skips_a_group_with_matches(batch):
-    from cqe.exec.filter import apply as apply_predicate
-
     built = sorted_by(batch, "amount")
     predicate = Compare("<", column("amount"), literal(40.0))
     total = apply_predicate(predicate, batch).rows

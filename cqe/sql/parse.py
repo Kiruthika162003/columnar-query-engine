@@ -559,7 +559,9 @@ def _project(query: Select, plan: Plan) -> Plan:
     schema = plan.schema()
     missing = [one for one in names if one not in schema]
     if missing:
-        raise UnknownColumn(f"{missing} are selected and are not columns of the result")
+        raise UnknownColumn(
+            f"{missing} are selected and are not columns of {sorted(schema.names)}"
+        )
     if names == tuple(schema.names):
         return plan
     return Project(input=plan, names=names)

@@ -112,6 +112,22 @@ class Scan(Plan):
         """The columns a reader would actually fetch, which is what a scan costs."""
         return self.projected if self.projected is not None else self.table_schema.names
 
+    def columns_used(self) -> frozenset[str]:
+        """The columns any pushed predicate reads.
+
+        Not the projected columns, which are an output rather than a requirement. This is the
+        input side, and it exists because projection pushdown asks every node what it reads and
+        a scan with a predicate pushed into it reads more than it produces.
+
+        Leaving it empty was a bug the measurements caught. Running predicate pushdown and then
+        projection pushdown narrowed a scan to the query's output columns and dropped the column
+        the pushed predicate needed, so the plan built cleanly and failed at the point the
+        predicate was evaluated.
+        """
+        if not self.pushed:
+            return frozenset()
+        return frozenset().union(*(one.columns_used() for one in self.pushed))
+
     def with_projection(self, names: Sequence[str]) -> Scan:
         """The same scan reading only the named columns."""
         return Scan(

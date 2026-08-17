@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -415,7 +415,7 @@ def every_function_agrees_with_the_reference(rows: int = 2000) -> dict:
     return {**out, "they_all_agree": all(out.values())}
 
 
-def the_three_rankings_differ_on_ties(rows: int = 40) -> dict:
+def the_three_rankings_differ_on_ties() -> dict:
     """Row number, rank and dense rank over a column with ties in it.
 
     The one measurement that makes the difference between them concrete. Three rows tied at the
@@ -813,3 +813,4 @@ def summarise() -> dict:
         ],
         "passes": the_vectorised_path_beats_the_reference()["passes"],
     }
+

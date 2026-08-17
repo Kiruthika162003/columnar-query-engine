@@ -41,8 +41,14 @@ def measure_output() -> str:
     return run_example("measure_everything.py")
 
 
+@pytest.fixture(scope="module")
+def tidy_output() -> str:
+    """The compaction example, run once."""
+    return run_example("keep_a_table_tidy.py")
+
+
 def test_every_example_exists():
-    assert len(list(EXAMPLES.glob("*.py"))) == 3
+    assert len(list(EXAMPLES.glob("*.py"))) == 4
 
 
 def test_every_example_has_a_docstring():
@@ -124,8 +130,41 @@ def test_the_explain_example_returns_three_rows(explain_output):
     assert len(answer) == 4
 
 
+def test_the_tidy_example_ingests_in_pieces(tidy_output):
+    assert "60000 rows arrived in 120 pieces of 500" in tidy_output
+
+
+def test_the_tidy_example_reports_the_metadata_share(tidy_output):
+    assert "metadata share" in tidy_output
+
+
+def test_the_tidy_example_compacts_to_one_file(tidy_output):
+    assert "120 to 1" in tidy_output
+
+
+def test_the_tidy_example_reports_a_break_even(tidy_output):
+    assert "break even" in tidy_output
+
+
+def test_the_tidy_example_keeps_every_row(tidy_output):
+    assert "holds the same 60000 rows: yes" in tidy_output
+
+
+def test_the_tidy_example_admits_a_query_got_worse(tidy_output):
+    assert "recent orders got worse" in tidy_output
+
+
+def test_the_tidy_example_finds_four_statuses(tidy_output):
+    line = next(one for one in tidy_output.split("\n") if one.startswith("status"))
+    assert "4" in line
+
+
+def test_the_tidy_example_leaves_no_files(tidy_output):
+    assert tidy_output and not list(Path().glob("_tidy_*"))
+
+
 def test_the_measure_example_covers_every_module(measure_output):
-    assert "30 modules" in measure_output
+    assert "45 modules" in measure_output
 
 
 def test_every_module_summarised(measure_output):
@@ -146,4 +185,4 @@ def test_the_measure_example_reports_the_differential_harness(measure_output):
 
 def test_the_measure_example_reports_one_line_per_module(measure_output):
     lines = [one for one in measure_output.split("\n") if one.strip() and "modules" not in one]
-    assert len(lines) == 31
+    assert len(lines) == 46

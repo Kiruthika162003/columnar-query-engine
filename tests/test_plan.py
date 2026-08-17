@@ -151,7 +151,7 @@ class TestPushdown:
         result = pushdown.a_projection_narrows_every_scan()
         assert result["columns_after"] < result["columns_before"]
 
-    def test_and_the_answer_survives(self):
+    def test_and_the_projection_answer_survives(self):
         assert pushdown.a_projection_narrows_every_scan()["same_rows"]
 
     def test_the_rule_order_does_not_matter(self):
@@ -321,7 +321,7 @@ class TestPruning:
     def test_conjuncts_prune_independently(self):
         assert pruning.conjuncts_prune_independently()["both_prune_more"]
 
-    def test_and_the_answer_survives(self):
+    def test_and_the_conjunct_answer_survives(self):
         assert pruning.conjuncts_prune_independently()["same_rows"]
 
     def test_a_reader_without_predicates_reads_everything(self):

@@ -17,7 +17,9 @@ from cqe.columns.encode import bitpack, delta, dictionary, runlength
 from cqe.cost import model
 from cqe.cost.model import estimate
 from cqe.errors import ParseError, QueryEngineError
-from cqe.exec import aggregate, sort, spill
+from cqe.eval import regression as eval_regression
+from cqe.eval import workload as eval_workload
+from cqe.exec import aggregate, project, sort, spill
 from cqe.exec import filter as filters
 from cqe.exec.batch import Batch
 from cqe.exec.join import hash as joins
@@ -31,7 +33,7 @@ from cqe.sql import parse, tokenise
 from cqe.sql.parse import plan as plan_query
 from cqe.stats import cardinality, histogram, sketch
 from cqe.stats.cardinality import collect
-from cqe.storage import bloom, file, layout, statistics
+from cqe.storage import bloom, disk, file, layout, statistics
 from cqe.storage.file import peek, read, write
 from cqe.storage.layout import as_they_arrive, clustered_by, sorted_by
 from cqe.verify import differential, fuzz
@@ -298,6 +300,7 @@ def command_measure(arguments: argparse.Namespace) -> Result:
         "columns/encode/bitpack": bitpack,
         "columns/encode/delta": delta,
         "exec/filter": filters,
+        "exec/project": project,
         "exec/aggregate": aggregate,
         "exec/sort": sort,
         "exec/join/hash": joins,
@@ -306,6 +309,7 @@ def command_measure(arguments: argparse.Namespace) -> Result:
         "storage/file": file,
         "storage/bloom": bloom,
         "storage/layout": layout,
+        "storage/disk": disk,
         "stats/histogram": histogram,
         "stats/sketch": sketch,
         "stats/cardinality": cardinality,
@@ -319,6 +323,8 @@ def command_measure(arguments: argparse.Namespace) -> Result:
         "sql/parse": parse,
         "verify/fuzz": fuzz,
         "verify/differential": differential,
+        "eval/workload": eval_workload,
+        "eval/regression": eval_regression,
     }
     wanted = [one for one in modules if arguments.only in one] if arguments.only else modules
     out = []

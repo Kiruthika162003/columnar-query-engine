@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 
@@ -398,9 +398,7 @@ def the_generator_makes_nulls(count: int = 200) -> dict:
             len(with_nulls) / len(columns) - NULL_COLUMN_RATE
         )
         < 0.1,
-        "the_value_rate_is_near_its_target": abs(
-            nulls / max(inside, 1) - NULL_VALUE_RATE
-        )
+        "the_value_rate_is_near_its_target": abs(nulls / max(inside, 1) - NULL_VALUE_RATE)
         < 0.05,
     }
 
@@ -626,4 +624,3 @@ def summarise() -> dict:
         "no_false_positives": a_search_over_a_sound_check_finds_nothing()["it_found_nothing"],
         "finds_a_real_one": a_search_over_a_broken_check_finds_it()["it_found_some"],
     }
-

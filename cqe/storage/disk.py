@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import tempfile
 from collections.abc import Iterator, Sequence
@@ -696,4 +696,3 @@ def summarise() -> dict:
         ],
         "streaming_agrees": streaming_gives_the_same_rows_as_reading()["they_agree"],
     }
-

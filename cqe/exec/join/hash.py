@@ -687,9 +687,7 @@ def summarise(left_rows: int = 20_000) -> dict:
         "strategies_agree": agreement["hash_matches_merge"]
         and agreement["hash_matches_nested_loop"],
         "agrees_with_the_reference": against["same"],
-        "build_side_changes_the_values": (
-            sides["build_right_values"] != sides["build_left_values"]
-        ),
+        "the_total_operations_match": sides["the_total_operations_match"],
         "widest_nested_loop_ratio": scaling[-1]["ratio"],
         "cheapest": compare_the_strategies()[0]["strategy"],
         "key_type": INTEGER,

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -578,7 +578,7 @@ def a_membership_of_one_becomes_an_equality(rows: int = 10000) -> dict:
     }
 
 
-def the_rules_terminate(rows: int = 2000) -> dict:
+def the_rules_terminate() -> dict:
     """Every rewrite reaches a fixed point in a handful of rounds.
 
     The property a rule set needs and the one that fails silently: two rules that undo each
@@ -615,7 +615,7 @@ def every_rewrite_keeps_the_same_rows(rows: int = 4000) -> dict:
     }
 
 
-def every_rewrite_shrinks_or_stays(rows: int = 2000) -> dict:
+def every_rewrite_shrinks_or_stays() -> dict:
     """No rule makes a predicate larger, which is what makes the rewriting terminate.
 
     Not quite true of push negation over a conjunction, which turns one node into two, and the
@@ -788,3 +788,4 @@ def summarise() -> dict:
             "it_is_a_constant"
         ],
     }
+

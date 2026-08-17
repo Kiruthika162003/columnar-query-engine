@@ -11,7 +11,7 @@ import numpy as np
 from cqe.columns.array import Column
 from cqe.errors import ConfigError, CorruptFile, DataError, SchemaError
 from cqe.exec.batch import Batch, stack
-from cqe.storage.statistics import GroupStats, collect
+from cqe.storage.statistics import ColumnStats, GroupStats, collect
 from cqe.types.schema import (
     BOOLEAN,
     DATE,
@@ -68,6 +68,7 @@ FIELD_RECORD = struct.Struct("<IIB")
 GROUP_RECORD = struct.Struct("<IQI")
 CHUNK_RECORD = struct.Struct("<IIQQQQI")
 COLUMN_LENGTHS = struct.Struct("<QQQ")
+STATS_RECORD = struct.Struct("<IIQB")
 
 
 @dataclass
@@ -217,7 +218,78 @@ def _pack_footer(footer: Footer) -> bytes:
                 chunk.dictionary_entries,
             )
             out += name
+            out += _pack_stats(group.stats.columns.get(chunk.column))
     return bytes(out)
+
+
+def _pack_stats(stats: ColumnStats | None) -> bytes:
+    """One column's range for one group, as bytes.
+
+    This is the part the first version of the format left out, and leaving it out made every
+    pruning decision in the package vacuous when it ran through a file. The writer collected the
+    statistics, the format did not carry them, and the reader rebuilt an empty set, so can_skip
+    was asked about a group it knew nothing about and correctly said it could not skip it.
+
+    Nothing failed. Every test passed, because the pruning was measured on statistics collected
+    in memory and never on statistics read back from a file. A mechanism that is measured
+    somewhere other than where it runs is not measured.
+
+    A minimum and a maximum, each as text so that one encoding covers every type, plus the null
+    count. Text costs more than a packed double for a number and the alternative is a type tag
+    and four cases, and storage/statistics.py already measured the whole footer at well under a
+    percent of the file.
+    """
+    if stats is None:
+        return STATS_RECORD.pack(0, 0, 0, 0)
+    low = "" if stats.minimum is None else str(stats.minimum)
+    high = "" if stats.maximum is None else str(stats.maximum)
+    return (
+        STATS_RECORD.pack(len(low.encode("utf-8")), len(high.encode("utf-8")), stats.nulls, 1)
+        + low.encode("utf-8")
+        + high.encode("utf-8")
+    )
+
+
+def _unpack_stats(blob: bytes, position: int, name: str, rows: int, logical: str):
+    """One column's range back out of the footer, with the position it ended at."""
+    low_bytes, high_bytes, nulls, present = STATS_RECORD.unpack(
+        blob[position : position + STATS_RECORD.size]
+    )
+    position += STATS_RECORD.size
+    low = blob[position : position + low_bytes].decode("utf-8")
+    position += low_bytes
+    high = blob[position : position + high_bytes].decode("utf-8")
+    position += high_bytes
+    if not present:
+        return None, position
+    return (
+        ColumnStats(
+            name=name,
+            minimum=_typed(low, logical),
+            maximum=_typed(high, logical),
+            nulls=nulls,
+            rows=rows,
+        ),
+        position,
+    )
+
+
+def _typed(text: str, logical: str):
+    """A statistic read back as the type its column holds.
+
+    A minimum stored as text and read back as text would compare wrongly against a number: the
+    string "9" is greater than the string "10" and the number nine is not. That is the failure
+    this function exists to prevent and it is invisible until a query prunes the wrong group.
+    """
+    if not text:
+        return None
+    if logical == STRING:
+        return text
+    if logical == INTEGER:
+        return int(float(text))
+    if logical == BOOLEAN:
+        return text == "True"
+    return float(text)
 
 
 def _unpack_footer(blob: bytes) -> Footer:
@@ -238,6 +310,7 @@ def _unpack_footer(blob: bytes) -> Footer:
         (group_count,) = struct.unpack("<I", blob[position : position + 4])
         position += 4
         groups = []
+        ranges: dict[str, ColumnStats] = {}
         for _ in range(group_count):
             index, rows, chunk_count = GROUP_RECORD.unpack(
                 blob[position : position + GROUP_RECORD.size]
@@ -268,14 +341,20 @@ def _unpack_footer(blob: bytes) -> Footer:
                         dictionary_entries=entries,
                     )
                 )
+                one, position = _unpack_stats(
+                    blob, position, name, chunk_rows, CODE_TYPES[code]
+                )
+                if one is not None:
+                    ranges[name] = one
             groups.append(
                 GroupHeader(
                     position=index,
                     rows=rows,
                     chunks=tuple(chunks),
-                    stats=GroupStats(columns={}, rows=rows, position=index),
+                    stats=GroupStats(columns=dict(ranges), rows=rows, position=index),
                 )
             )
+            ranges.clear()
     except (struct.error, UnicodeDecodeError, KeyError, IndexError) as problem:
         raise CorruptFile(f"the footer cannot be read: {problem}") from problem
     return Footer(schema=schema, groups=tuple(groups), version=version)

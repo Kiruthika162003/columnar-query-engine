@@ -78,7 +78,11 @@ def test_the_bloom_filter_prunes_the_lookup(file_output):
 
 
 def test_narrowing_reads_fewer_bytes(file_output):
-    lines = [one for one in file_output.split("\n") if one.strip().startswith("two columns")]
+    lines = [
+        one
+        for one in file_output.split("\n")
+        if one.strip().startswith("two columns") and "bytes" in one
+    ]
     assert "640000" in lines[0]
 
 

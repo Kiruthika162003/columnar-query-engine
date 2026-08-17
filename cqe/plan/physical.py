@@ -238,15 +238,24 @@ class Runner:
     def _group_strategy(self, batch: Batch, plan: Group) -> tuple[str, str]:
         """Which aggregate to run.
 
-        Counting when there is one dictionary key with few enough entries, because then the
-        grouping is a bincount over the codes and there is no hash table at all. Sorted when the
-        keys arrived ordered, because then the group boundaries are a difference. Hash
+        Counting when there is one dictionary key with few enough entries and no nulls, because
+        then the grouping is a bincount over the codes and there is no hash table at all. Sorted
+        when the keys arrived ordered, because then the group boundaries are a difference. Hash
         otherwise, which is most of the time and is the one with no precondition.
+
+        The null check was missing and verify/differential.py found it: a nullable string key
+        chose the counting form, which refuses nulls, and the query raised a ConfigError from
+        inside the aggregate. The failure was a crash rather than a wrong answer, which is why
+        every hand written test passed: none of them grouped by a nullable string.
         """
         if len(plan.keys) == 1:
             column = batch.column(plan.keys[0])
             entries = len(column.dictionary or ())
-            if column.field.logical == STRING and 0 < entries <= COUNTING_LIMIT:
+            if (
+                column.field.logical == STRING
+                and 0 < entries <= COUNTING_LIMIT
+                and not column.has_nulls
+            ):
                 return COUNTING_GROUP, f"one dictionary key with {entries} entries"
         if _is_ordered(batch, plan.keys):
             return SORTED_GROUP, "the keys arrived sorted"

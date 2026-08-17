@@ -457,6 +457,21 @@ class Agreement:
     left_rows: int = 0
     right_rows: int = 0
 
+    def __bool__(self) -> bool:
+        """Whether the two results agreed.
+
+        This method is the most important five lines in the package and it was missing. Without
+        it a dataclass is always truthy, so every `assert agree(fast, reference)` anywhere in
+        this repository passed whatever the two sides held, and the entire differential strategy
+        was decoration. The bug was found by verify/differential.py, which deliberately breaks a
+        filter to check that the harness can fail, and the harness did not fail.
+
+        The lesson is not that a dunder was forgotten. It is that a check which has never been
+        seen to fail has not been shown to work, and the only defence is a measurement that
+        breaks something on purpose.
+        """
+        return self.same
+
     def as_dict(self) -> dict:
         """Flat mapping for logging."""
         return {

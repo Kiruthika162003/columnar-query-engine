@@ -130,7 +130,7 @@ def order_by(
     positions = np.arange(batch.rows, dtype=np.int64)
     for key in reversed(list(keys)):
         values, valid = _rank_array(batch, key)
-        working = values[positions]
+        working = _flattened(values, valid)[positions]
         order = np.argsort(working, kind="stable")
         if key.descending:
             order = order[::-1]
@@ -143,6 +143,27 @@ def order_by(
     if meter is not None:
         meter.compare(int(batch.rows * max(np.log2(max(batch.rows, 2)), 1)) * len(keys))
     return Ordering(positions=positions, rows=batch.rows, keys=tuple(keys), strategy="full")
+
+
+def _flattened(values: np.ndarray, valid: np.ndarray | None) -> np.ndarray:
+    """The key values with every null row set to the same thing.
+
+    A null row still holds something in the values array, and whatever it holds took part in the
+    ordering. Two null rows then came out ordered by their leftover values rather than by their
+    input order, so the sort was not stable across nulls: verify/differential.py generated a
+    column with three nulls and the fast path returned them in a different order from the
+    reference, which does keep them in input order.
+
+    The fix is to make every null equal before the comparison rather than to reorder them after
+    it. Ordering them afterwards would be wrong for a multi key sort, because the nulls of one
+    key must stay in the order the less significant keys left them in, and that order is only
+    knowable at this point.
+    """
+    if valid is None or bool(valid.all()):
+        return values
+    out = values.copy()
+    out[~valid] = values[valid][0] if bool(valid.any()) else values[0]
+    return out
 
 
 def _restabilise(values: np.ndarray, order: np.ndarray) -> np.ndarray:

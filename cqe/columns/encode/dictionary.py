@@ -318,9 +318,9 @@ def an_equality_filter_is_one_integer_comparison(
     """Filtering a dictionary column for one value costs a lookup plus a scan of codes.
 
     The lookup is a single dictionary probe whatever the column height, so the per row cost is
-    two bytes compared against 17.7 bytes of text. The string never enters the comparison at all,
-    which is the reason the engine dictionary encodes every string column rather than only the
-    low cardinality ones.
+    two bytes compared against 17.7 bytes of text. The string never enters the comparison at
+    all, which is the reason the engine dictionary encodes every string column rather than only
+    the low cardinality ones.
     """
     values = sample(rows, distinct)
     encoded = encode(values)
@@ -351,8 +351,8 @@ def a_range_filter_needs_an_ordered_dictionary(
     back, which is 42 here against 2.
 
     Both give the same answer, which is checked, and one of them is twenty one times the per row
-    work. The ratio is the count of codes in the range, so it grows with the cardinality and with
-    the width of the predicate.
+    work. The ratio is the count of codes in the range, so it grows with the cardinality and
+    with the width of the predicate.
     """
     values = sample(rows, distinct)
     low, high = sorted(values)[distinct // 4], sorted(values)[3 * distinct // 4]
@@ -393,8 +393,8 @@ def ordering_the_dictionary_is_not_free(
     """What the sort at build time costs, as a share of building the dictionary at all.
 
     An operation count rather than a measurement, and the docstring says so because everything
-    else in this package is counted rather than modelled. The pass over the rows is one operation
-    per row; the sort is taken as n log n over the distinct values.
+    else in this package is counted rather than modelled. The pass over the rows is one
+    operation per row; the sort is taken as n log n over the distinct values.
 
     I assumed this was negligible and it is not. At five thousand distinct values in two hundred
     thousand rows it comes to 0.30 of the pass over the rows. The pass grows with the height and

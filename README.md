@@ -123,13 +123,6 @@ About 30000 lines of implementation and tests, 53 modules, 2555 tests. Python 3.
 NumPy are the only requirements; there is no other dependency, and no part of the engine calls
 out to a database to do the work.
 
-## Attribution
-
-Written by Kiruthika Subramani in collaboration with Claude, Anthropic's AI assistant. The
-design, the choice of what to measure, and the review of every result were mine; the
-implementation and the tests were written jointly. The measurements above were run rather than
-asserted, and about forty five of them contradicted the first version of the claim they now
-support.
 
 ## Licence
 
